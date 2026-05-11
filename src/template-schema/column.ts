@@ -36,6 +36,42 @@ export type LogoMode = 'fit' | 'fill' | 'freeform'
  */
 export type LogoSource = 'flightNo' | 'mainFlight' | 'codeshares'
 
+/**
+ * Date-overflow rendering for time-typed columns (scheduled / estimated /
+ * actual / boardingTime / loungeOpens / loungeCloses / finalCallTime /
+ * lastBagAt). When configured, the cell renders the time on the first line
+ * and an overflow indicator on a second line below — either a calendar
+ * date ("06 MAY") or a signed day offset ("+1" / "-1") relative to the
+ * operating day. The runtime decides whether the day actually differs;
+ * the editor only owns the styling and visibility policy.
+ *
+ * Both the time line and the date line are independently colourable —
+ * the time line uses cellStyle.textColor (Body typography), the date
+ * line uses dateOverflow.textColor.
+ */
+export type DateOverflowWhen = 'differentDay' | 'always' | 'never'
+export type DateOverflowMode = 'date' | 'offset'
+export type DateOverflowFormat = 'DD MMM' | 'D MMM' | 'DD/MM' | 'EEE DD'
+
+export interface DateOverflow {
+  /** Visibility policy. Default 'differentDay' (only when day differs). */
+  when?: DateOverflowWhen
+  /** Calendar date vs signed offset. Default 'date'. */
+  mode?: DateOverflowMode
+  /** Format string for mode='date'. Ignored when mode='offset'. */
+  format?: DateOverflowFormat
+  /** Date-line font size as a fraction of the time-line font size. Range
+   *  0.3–1.0; default 0.5. Relative on purpose so overflow stays in
+   *  proportion when band typography changes. */
+  scale?: number
+  /** Independent colour for the date line. Defaults to the time colour. */
+  textColor?: string
+  /** Independent weight for the date line. Defaults to the time weight. */
+  fontWeight?: number
+  /** Vertical gap (px) between the time and date lines. Default 2. */
+  gap?: number
+}
+
 export interface FidsColumn {
   id: string
   field: FidsField
@@ -76,6 +112,10 @@ export interface FidsColumn {
   // ── Origin / Destination knobs ──
   /** When false, suppresses the "(XXX)" IATA code suffix. Defaults to true. */
   showAirportCode?: boolean
+
+  // ── Time-field knobs ──
+  /** Stacked second-line indicator for cross-day times. See `DateOverflow`. */
+  dateOverflow?: DateOverflow
 
   // ── Status-only knobs ──
   rotateTranslations?: boolean

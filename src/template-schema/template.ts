@@ -68,6 +68,26 @@ export const DEFAULT_TEMPLATE_CYCLE_MS = 4000
 export const ORIENTATIONS = ['landscape', 'portrait'] as const
 export type Orientation = (typeof ORIENTATIONS)[number]
 
+/**
+ * Page rotation policy for tabular and dedicatedMulti templates.
+ *
+ * The editor owns *speed* and *transition*; the page count is decided by
+ * DCMM at deployment time based on flight load vs. visible row capacity.
+ * Mapping at the runtime boundary:
+ *   periodSec  → Flutter `flipOffsetAtSeconds` / pos_frontend offsetSec
+ *   transition → editor-side promise; Flutter currently snaps (none)
+ *
+ * `periodSec` is constrained to divisors of 60 in the inspector so any
+ * page count DCMM picks yields a cycle that divides 60 evenly.
+ */
+export const FLIP_TRANSITIONS = ['none', 'fade', 'slideUp', 'slideLeft'] as const
+export type FlipTransition = (typeof FLIP_TRANSITIONS)[number]
+
+export interface FlipPagesConfig {
+  periodSec: number
+  transition?: FlipTransition
+}
+
 interface TemplateBase {
   schemaVersion: SchemaVersion
   orientation: Orientation
@@ -89,6 +109,8 @@ export interface TabularTemplate extends TemplateBase {
    *  Independent edit surface — flipping orientation does not migrate
    *  edits between the two lists. */
   columnsPortrait: FidsColumn[]
+  /** Page rotation policy. Absent = no rotation. */
+  flipPages?: FlipPagesConfig
 }
 
 export interface DedicatedTemplate extends TemplateBase {
@@ -99,6 +121,8 @@ export interface DedicatedTemplate extends TemplateBase {
 export interface DedicatedMultiTemplate extends TemplateBase {
   type: DedicatedMultiTemplateType
   main: DedicatedMultiMainBand
+  /** Page rotation policy. Absent = no rotation. */
+  flipPages?: FlipPagesConfig
 }
 
 export type AnyDedicatedTemplate = DedicatedTemplate | DedicatedMultiTemplate

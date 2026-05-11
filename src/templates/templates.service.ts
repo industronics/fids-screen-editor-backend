@@ -107,6 +107,13 @@ export class TemplatesService {
       doc.type = dto.body.type
       doc.orientation = dto.body.orientation
       doc.schemaVersion = dto.body.schemaVersion
+      // The actual body lives in storage, so when only element-level
+      // edits happen the denormalized assignments above are no-ops
+      // and Mongoose's `save()` becomes a no-op too — leaving
+      // `updatedAt` stale. Force-mark the doc modified so the
+      // timestamp bumps and the editor's "saved Xs ago" reflects the
+      // real write.
+      doc.set('updatedAt', new Date())
     }
     if (dto.sourceRef !== undefined) {
       doc.sourceRef = dto.sourceRef

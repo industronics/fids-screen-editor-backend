@@ -194,6 +194,16 @@ const columnCellStyle = z.object({
 const logoMode = z.enum(['fit', 'fill', 'freeform'])
 const logoSource = z.enum(['flightNo', 'mainFlight', 'codeshares'])
 
+const dateOverflow = z.object({
+  when: z.enum(['differentDay', 'always', 'never']).optional(),
+  mode: z.enum(['date', 'offset']).optional(),
+  format: z.enum(['DD MMM', 'D MMM', 'DD/MM', 'EEE DD']).optional(),
+  scale: z.number().min(0.3).max(1).optional(),
+  textColor: z.string().optional(),
+  fontWeight: z.number().optional(),
+  gap: z.number().nonnegative().optional(),
+})
+
 const fidsColumn = z.object({
   id: z.string(),
   field: fidsField,
@@ -214,6 +224,7 @@ const fidsColumn = z.object({
   logoSource: logoSource.optional(),
   bucketSize: logoBucketSize.optional(),
   showAirportCode: z.boolean().optional(),
+  dateOverflow: dateOverflow.optional(),
   rotateTranslations: z.boolean().optional(),
   scrollDurationSec: z.number().optional(),
   styleRules: z.array(styleRule).optional(),
@@ -233,6 +244,11 @@ const templateBase = {
   footer: freeformBand,
 }
 
+const flipPages = z.object({
+  periodSec: z.number().int().positive(),
+  transition: z.enum(['none', 'fade', 'slideUp', 'slideLeft']).optional(),
+})
+
 const tabularTemplate = z.object({
   ...templateBase,
   type: z.enum(['multiUserDepartures', 'multiUserArrivals', 'multiUserBaggage']),
@@ -240,6 +256,7 @@ const tabularTemplate = z.object({
   main: tabularMainBand,
   columnsLandscape: z.array(fidsColumn),
   columnsPortrait: z.array(fidsColumn),
+  flipPages: flipPages.optional(),
 })
 
 const dedicatedTemplate = z.object({
@@ -252,6 +269,7 @@ const dedicatedMultiTemplate = z.object({
   ...templateBase,
   type: z.enum(['dedicatedDoubleGate', 'dedicatedGateEntry', 'dedicatedCarousel']),
   main: dedicatedMultiMainBand,
+  flipPages: flipPages.optional(),
 })
 
 export const templateSchema = z.discriminatedUnion('type', [
