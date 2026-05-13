@@ -144,11 +144,24 @@ const boundBandStyle = z.object({
   padding: z.number(),
 })
 
+const scrollTextConfig = z.object({
+  textColor: z.string(),
+  font: fontFamily,
+  fontSize: z.number().positive(),
+  speed: z.number().nonnegative(),
+  noScroll: z.boolean(),
+  direction: z.enum(['left', 'right']).optional(),
+  insetLeft: z.number().nonnegative().optional(),
+  insetRight: z.number().nonnegative().optional(),
+  previewLines: z.array(z.string()),
+})
+
 const freeformBand = z.object({
   enabled: z.boolean(),
   height: z.number(),
   bg: z.string().optional(),
   children: z.array(freeformChild),
+  scrollText: scrollTextConfig.optional(),
 })
 
 const columnHeaderBand = z.object({

@@ -5,6 +5,7 @@ dist/
 *.log
 .DS_Store
 .claude
+.npmrc
 
 # Local asset bytes for the POC; the real backend will write to GCS.
 uploads/

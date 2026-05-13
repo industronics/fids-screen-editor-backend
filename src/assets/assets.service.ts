@@ -9,6 +9,7 @@ import { InjectModel } from '@nestjs/mongoose'
 import { Model, Types } from 'mongoose'
 import sharp from 'sharp'
 import { imageSize } from 'image-size'
+import { AuthRequest } from '@industronics/remote-auth'
 import {
   ASSET_CATEGORIES,
   type AssetCategory,
@@ -16,6 +17,7 @@ import {
 import { AssetEntity, type AssetDocument } from './schemas/asset.schema'
 import type { UpdateAssetDto } from './dto/update-asset.dto'
 import { ASSET_STORAGE_SERVICE, IStorageService } from '../storage/storage.service'
+import { buildScopedListQuery, buildScopedQuery } from '../common/scoped-query'
 
 /**
  * AssetMetaDto — response shape for the editor's library list. Mirrors
@@ -34,7 +36,6 @@ export interface AssetMetaDto {
   category: AssetCategory
   createdAt: number
   url: string
-  /** Provenance — null for direct uploads; non-null for imports. */
   sourceRef: string | null
 }
 
@@ -50,21 +51,23 @@ export class AssetsService {
     private readonly storage: IStorageService,
     config: ConfigService,
   ) {
-    // PUBLIC_BASE_URL lets the API advertise a different origin than the
-    // listening port — useful behind reverse proxies. Falls back to
-    // localhost:PORT for the POC. No trailing slash.
     const port = Number(config.get<string>('PORT') ?? 3010)
     const fallback = `http://localhost:${port}`
     const base = config.get<string>('PUBLIC_BASE_URL') ?? fallback
     this.publicBase = base.replace(/\/$/, '')
   }
 
-  async list(): Promise<AssetMetaDto[]> {
-    const docs = await this.model.find().sort({ createdAt: -1 }).lean({ virtuals: false }).exec()
+  async list(req: AuthRequest): Promise<AssetMetaDto[]> {
+    const docs = await this.model
+      .find(buildScopedListQuery(req))
+      .sort({ createdAt: -1 })
+      .lean({ virtuals: false })
+      .exec()
     return docs.map((d) => this.toMeta(d as unknown as AssetDocument))
   }
 
   async upload(
+    req: AuthRequest,
     file: Express.Multer.File,
     category: AssetCategory | undefined,
     sourceRef?: string | null,
@@ -77,9 +80,6 @@ export class AssetsService {
       ? (category as AssetCategory)
       : 'other'
 
-    // Pre-mint the _id so we can compute sourceRef before the doc is
-    // written. Caller-supplied sourceRef wins (e.g. import scripts);
-    // otherwise we record where the bytes actually land in storage.
     const _id = new Types.ObjectId()
     const id = String(_id)
     const resolvedSourceRef = sourceRef ?? this.storage.getStorageRef(id)
@@ -93,6 +93,11 @@ export class AssetsService {
       height: dims.height,
       category: cat,
       sourceRef: resolvedSourceRef,
+      ownerType: req.scope.ownerType,
+      ownerId: req.scope.ownerId,
+      createdBy: req.user.userId ? new Types.ObjectId(req.user.userId) : null,
+      updatedBy: req.user.userId ? new Types.ObjectId(req.user.userId) : null,
+      isActive: true,
     })
     try {
       await this.storage.put(
@@ -101,14 +106,16 @@ export class AssetsService {
         file.mimetype || 'application/octet-stream',
       )
     } catch (err) {
-      // Storage write failed — roll back the meta record so we don't
-      // leave a dangling pointer to nothing.
       await this.model.deleteOne({ _id }).exec()
       throw err
     }
     return this.toMeta(created)
   }
 
+  /**
+   * Raw-bytes endpoints intentionally don't take an AuthRequest — see
+   * AssetsController header comment. Existence check by id only.
+   */
   async getStream(id: string): Promise<{ stream: NodeJS.ReadableStream; mime: string } | null> {
     const doc = await this.findByIdOrNull(id)
     if (!doc) return null
@@ -120,40 +127,30 @@ export class AssetsService {
     return { stream, mime: doc.mime }
   }
 
-  /**
-   * If the storage backend prefers a client redirect (e.g. signed GCS
-   * URL), return that URL. Returns null when:
-   *   - the asset id has no Mongo record, OR
-   *   - the backend prefers streaming (LocalFs always lands here).
-   * The controller falls back to getStream() in the second case.
-   */
   async getRedirectUrl(id: string): Promise<string | null> {
     const doc = await this.findByIdOrNull(id)
     if (!doc) return null
     return this.storage.getReadUrl(id)
   }
 
-  async update(id: string, dto: UpdateAssetDto): Promise<AssetMetaDto> {
-    const doc = await this.findByIdOrThrow(id)
+  async update(req: AuthRequest, id: string, dto: UpdateAssetDto): Promise<AssetMetaDto> {
+    const doc = await this.findScopedOrThrow(req, id)
     if (dto.name !== undefined) doc.name = dto.name.trim() || doc.name
     if (dto.category !== undefined) doc.category = dto.category
     if (dto.sourceRef !== undefined) doc.sourceRef = dto.sourceRef
+    if (req.user.userId) {
+      doc.updatedBy = new Types.ObjectId(req.user.userId)
+    }
     await doc.save()
     return this.toMeta(doc)
   }
 
-  async remove(id: string): Promise<void> {
-    const doc = await this.findByIdOrNull(id)
-    if (!doc) throw new NotFoundException(`Asset ${id} not found`)
-    await this.storage.remove(id)
+  async remove(req: AuthRequest, id: string): Promise<void> {
+    const doc = await this.findScopedOrThrow(req, id)
+    await this.storage.remove(String(doc._id))
     await this.model.deleteOne({ _id: doc._id }).exec()
   }
 
-  /**
-   * resolveUrl — exposed for the renderer-fetch endpoint so it can
-   * build the assetUrlMap from a list of asset ids without going
-   * through `list()`.
-   */
   resolveUrl(id: string): string {
     return `${this.publicBase}/assets/${id}/raw`
   }
@@ -161,17 +158,13 @@ export class AssetsService {
   // ── Internals ────────────────────────────────────────────────────
 
   private async decodeDimensions(buffer: Buffer, mime: string): Promise<{ width: number | null; height: number | null }> {
-    // Try image-size first — it reads headers only, no full decode, and
-    // handles BMP variants that libvips refuses (the legacy headers in
-    // public/ are exactly such variants). Sharp is the fallback for
-    // formats image-size doesn't recognize.
     try {
       const sized = imageSize(buffer)
       if (sized?.width && sized?.height) {
         return { width: sized.width, height: sized.height }
       }
     } catch {
-      // Fall through to sharp.
+      // fall through to sharp
     }
     try {
       const meta = await sharp(buffer).metadata()
@@ -187,11 +180,14 @@ export class AssetsService {
 
   private async findByIdOrNull(id: string): Promise<AssetDocument | null> {
     if (!Types.ObjectId.isValid(id)) return null
-    return this.model.findById(new Types.ObjectId(id)).exec()
+    return this.model.findOne({ _id: new Types.ObjectId(id), isActive: true }).exec()
   }
 
-  private async findByIdOrThrow(id: string): Promise<AssetDocument> {
-    const doc = await this.findByIdOrNull(id)
+  private async findScopedOrThrow(req: AuthRequest, id: string): Promise<AssetDocument> {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new NotFoundException(`Asset ${id} not found`)
+    }
+    const doc = await this.model.findOne(buildScopedQuery(req, id)).exec()
     if (!doc) throw new NotFoundException(`Asset ${id} not found`)
     return doc
   }

@@ -1,11 +1,14 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose'
-import { HydratedDocument } from 'mongoose'
+import { HydratedDocument, Types } from 'mongoose'
+import { OwnerType } from '@industronics/fids-utils'
 import {
   ORIENTATIONS,
   TEMPLATE_TYPES,
   type Orientation,
   type TemplateType,
 } from '../../template-schema'
+
+const OWNER_TYPE_VALUES = Object.values(OwnerType) as OwnerType[]
 
 export type TemplateStatus = 'draft' | 'published'
 export const TEMPLATE_STATUSES: readonly TemplateStatus[] = ['draft', 'published']
@@ -45,6 +48,35 @@ export class TemplateEntity {
    *  set by import scripts or migrations. Free-form string. */
   @Prop({ type: String, default: null })
   sourceRef: string | null
+
+  // ── Tenancy (P1: nullable; tightened to required after backfill) ──
+
+  @Prop({ type: String, enum: OWNER_TYPE_VALUES, default: null, index: true })
+  ownerType: OwnerType | null
+
+  @Prop({ type: Types.ObjectId, default: null, index: true })
+  ownerId: Types.ObjectId | null
+
+  @Prop({ type: Boolean, default: false })
+  isPublic: boolean
+
+  @Prop({ type: [Types.ObjectId], default: [] })
+  accessAirportIds: Types.ObjectId[]
+
+  @Prop({ type: Types.ObjectId, default: null })
+  createdBy: Types.ObjectId | null
+
+  @Prop({ type: Types.ObjectId, default: null })
+  updatedBy: Types.ObjectId | null
+
+  @Prop({ type: Boolean, default: true, index: true })
+  isActive: boolean
 }
 
 export const TemplateSchema = SchemaFactory.createForClass(TemplateEntity)
+
+TemplateSchema.index({ ownerType: 1, ownerId: 1, isActive: 1 })
+TemplateSchema.index({ isPublic: 1 }, { sparse: true })
+TemplateSchema.index({ ownerType: 1, ownerId: 1, status: 1, isActive: 1 })
+TemplateSchema.index({ accessAirportIds: 1, isActive: 1 }, { sparse: true })
+TemplateSchema.index({ createdBy: 1, isActive: 1 }, { sparse: true })

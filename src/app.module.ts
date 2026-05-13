@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common'
 import { ConfigModule, ConfigService } from '@nestjs/config'
 import { MongooseModule } from '@nestjs/mongoose'
+import { UserAuthModule } from '@industronics/remote-auth'
+import { ClsModule } from 'nestjs-cls'
 import { AssetsModule } from './assets/assets.module'
 import { HealthModule } from './health/health.module'
 import { TemplatesModule } from './templates/templates.module'
@@ -16,6 +18,13 @@ import { TemplatesModule } from './templates/templates.module'
  */
 @Module({
   imports: [
+    // ClsModule must mount before UserAuthModule because the package's
+    // UserJwtStrategy.validate() calls cls.set('userId', ...) and needs
+    // an active CLS context on every request.
+    ClsModule.forRoot({
+      global: true,
+      middleware: { mount: true, generateId: true },
+    }),
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ['.env'],
@@ -41,6 +50,7 @@ import { TemplatesModule } from './templates/templates.module'
         }
       },
     }),
+    UserAuthModule,
     HealthModule,
     TemplatesModule,
     AssetsModule,

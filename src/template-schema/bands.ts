@@ -26,9 +26,37 @@ export interface FreeformBand {
   height: number
   bg?: string
   children: FreeformChild[]
+  /** Optional DCMM-driven scrolling text overlay. Editor owns styling;
+   *  DCMM injects `lines[]` at deployment. `previewLines` is editor-only
+   *  sample content, ignored at runtime. */
+  scrollText?: ScrollTextConfig
 }
 
 export type BandFont = 'board' | 'sans' | 'mono'
+
+/**
+ * ScrollTextConfig — footer marquee styling mirroring the DCMM
+ * `messageContent` payload. `backgroundColor` is folded into the band's
+ * `bg` field; `lines` is editor-only (`previewLines`) since DCMM owns
+ * runtime content + schedule. `direction` chooses motion direction —
+ * 'left' (default, classic news-ticker) = enters right, exits left.
+ */
+export type ScrollDirection = 'left' | 'right'
+
+export interface ScrollTextConfig {
+  textColor: string
+  font: BandFont
+  fontSize: number
+  /** px/sec — matches DCMM (default 35) */
+  speed: number
+  noScroll: boolean
+  direction?: ScrollDirection
+  /** px reserved on the band's left/right edges so adjacent logos/text
+   *  in the footer band aren't run over by the marquee. */
+  insetLeft?: number
+  insetRight?: number
+  previewLines: string[]
+}
 
 /**
  * BoundBandStyle — per-band defaults for the FIDS-bound bands. One font
