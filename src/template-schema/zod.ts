@@ -194,6 +194,9 @@ const dedicatedMultiMainBand = z.object({
   }).optional(),
   bg: z.string().optional(),
   children: z.array(freeformChild),
+  // User-picked split direction. Only meaningful for dedicatedFreeformMulti;
+  // ignored (but tolerated) on the typed variants where axis is fixed.
+  axis: z.enum(['vertical', 'horizontal']).optional(),
 })
 
 // ── Column schema ──────────────────────────────────────────────────
@@ -253,6 +256,9 @@ const templateBase = {
   // never has to handle `undefined`. Bump to a versioned migration if a
   // future change ever needs to be non-additive.
   cycleMs: z.number().positive().default(DEFAULT_TEMPLATE_CYCLE_MS),
+  // Custom canvas dims for freeform templates; absent on fixed types.
+  width: z.number().int().positive().optional(),
+  height: z.number().int().positive().optional(),
   header: freeformBand,
   footer: freeformBand,
 }
@@ -274,13 +280,18 @@ const tabularTemplate = z.object({
 
 const dedicatedTemplate = z.object({
   ...templateBase,
-  type: z.enum(['dedicatedGate', 'dedicatedBaggage']),
+  type: z.enum(['dedicatedGate', 'dedicatedBaggage', 'dedicatedFreeform']),
   main: dedicatedMainBand,
 })
 
 const dedicatedMultiTemplate = z.object({
   ...templateBase,
-  type: z.enum(['dedicatedDoubleGate', 'dedicatedGateEntry', 'dedicatedCarousel']),
+  type: z.enum([
+    'dedicatedDoubleGate',
+    'dedicatedGateEntry',
+    'dedicatedCarousel',
+    'dedicatedFreeformMulti',
+  ]),
   main: dedicatedMultiMainBand,
   flipPages: flipPages.optional(),
 })

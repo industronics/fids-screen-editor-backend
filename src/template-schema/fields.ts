@@ -352,4 +352,8 @@ export const FIELDS_BY_TYPE: Record<TemplateType, readonly FidsField[]> = {
     'carousel', 'lastBagAt',
     'overallStatus', 'carouselStatus', 'remarkStatus',
   ],
+  // Freeform templates are intentionally unopinionated — every field is
+  // bindable so users can compose any layout from scratch.
+  dedicatedFreeform: FIDS_FIELDS,
+  dedicatedFreeformMulti: FIDS_FIELDS,
 }

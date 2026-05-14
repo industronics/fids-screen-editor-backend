@@ -100,10 +100,11 @@ export interface DedicatedMainBand {
  *   'horizontal' rows stacked top-to-bottom, divided by a horizontal line
  *                (dedicatedGateEntry — design ONE row, render `rowCount`)
  *
- * The axis is derived from the template type via `dedicatedSplitAxis()`
- * in template.ts; it is NOT stored on the band. Older saved templates
- * may still have a `splitAxis` field — Zod strips it on parse and the
- * renderer ignores it.
+ * For the typed multi templates (doubleGate / gateEntry / carousel) the
+ * axis is fixed by `dedicatedSplitAxis(type)` in template.ts. For
+ * `dedicatedFreeformMulti` the axis is user-configurable and lives on
+ * the band as `DedicatedMultiMainBand.axis`. `dedicatedSplitAxis()`
+ * checks the band first and falls back to the type-derived value.
  */
 export type SplitAxis = 'vertical' | 'horizontal'
 
@@ -129,4 +130,9 @@ export interface DedicatedMultiMainBand {
   rowDivider?: { color: string; thickness: number }
   bg?: string
   children: FreeformChild[]
+  /** User-picked split direction. Only consulted for template types whose
+   *  axis is not fixed (currently `dedicatedFreeformMulti`); for the typed
+   *  variants the axis comes from `dedicatedSplitAxis(type)` and this
+   *  field is ignored. Absent on legacy templates. */
+  axis?: SplitAxis
 }

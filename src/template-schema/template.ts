@@ -29,9 +29,11 @@ export const TEMPLATE_TYPES = [
   'multiUserBaggage',
   'dedicatedGate',
   'dedicatedBaggage',
+  'dedicatedFreeform',
   'dedicatedDoubleGate',
   'dedicatedGateEntry',
   'dedicatedCarousel',
+  'dedicatedFreeformMulti',
 ] as const
 export type TemplateType = (typeof TEMPLATE_TYPES)[number]
 
@@ -42,12 +44,20 @@ export const TABULAR_TYPES = [
 ] as const
 export type TabularTemplateType = (typeof TABULAR_TYPES)[number]
 
-/** Single-flight dedicated types — one freeform main band, no stamping. */
-export const DEDICATED_SINGLE_TYPES = ['dedicatedGate', 'dedicatedBaggage'] as const
+/** Single-flight dedicated types — one freeform main band, no stamping.
+ *  `dedicatedFreeform` is the blank-canvas variant — same shape, empty seed. */
+export const DEDICATED_SINGLE_TYPES = ['dedicatedGate', 'dedicatedBaggage', 'dedicatedFreeform'] as const
 export type DedicatedSingleTemplateType = (typeof DEDICATED_SINGLE_TYPES)[number]
 
-/** Multi-flight dedicated types — band carries one row template stamped N times. */
-export const DEDICATED_MULTI_TYPES = ['dedicatedDoubleGate', 'dedicatedGateEntry', 'dedicatedCarousel'] as const
+/** Multi-flight dedicated types — band carries one row template stamped N times.
+ *  `dedicatedFreeformMulti` is the blank-canvas variant; its axis is
+ *  user-picked and stored on `main.axis` instead of being type-derived. */
+export const DEDICATED_MULTI_TYPES = [
+  'dedicatedDoubleGate',
+  'dedicatedGateEntry',
+  'dedicatedCarousel',
+  'dedicatedFreeformMulti',
+] as const
 export type DedicatedMultiTemplateType = (typeof DEDICATED_MULTI_TYPES)[number]
 
 /** Union of all dedicated types — single + multi. */
@@ -95,6 +105,14 @@ interface TemplateBase {
    *  cell's `tick % values.length`. Editable in the Animation inspector;
    *  persisted with the template so saved/exported boards keep their tempo. */
   cycleMs: number
+  /** Custom artboard dimensions. Only set for freeform template types
+   *  (dedicatedFreeform / dedicatedFreeformMulti) where the user picks
+   *  the canvas size. When absent (fixed templates), dims fall back to
+   *  the global 1920×1080 / 1080×1920 presets driven by `orientation`.
+   *  `orientation` is auto-synced (w > h) for freeform so existing
+   *  orientation-aware code keeps working uniformly. */
+  width?: number
+  height?: number
   header: FreeformBand
   footer: FreeformBand
 }
@@ -143,14 +161,23 @@ export const isDedicatedMulti = (t: Template): t is DedicatedMultiTemplate =>
 
 /**
  * Layout direction for a dedicated-multi template's row stamping.
- * Replaces the deprecated `band.splitAxis` field — direction now lives
- * with the template type, not the band.
+ *
+ * Typed variants (doubleGate / gateEntry / carousel) have a fixed axis
+ * baked into the type. The freeform variant (`dedicatedFreeformMulti`)
+ * is user-picked and stored on `band.axis` — pass the band to resolve
+ * it correctly. Without a band the freeform variant defaults to
+ * 'vertical'.
  */
-export function dedicatedSplitAxis(type: DedicatedMultiTemplateType): SplitAxis {
+export function dedicatedSplitAxis(
+  type: DedicatedMultiTemplateType,
+  band?: DedicatedMultiMainBand,
+): SplitAxis {
+  if (band?.axis) return band.axis
   switch (type) {
-    case 'dedicatedDoubleGate': return 'vertical'
-    case 'dedicatedGateEntry':  return 'horizontal'
-    case 'dedicatedCarousel':   return 'horizontal'
+    case 'dedicatedDoubleGate':    return 'vertical'
+    case 'dedicatedGateEntry':     return 'horizontal'
+    case 'dedicatedCarousel':      return 'horizontal'
+    case 'dedicatedFreeformMulti': return 'vertical'
   }
 }
 
@@ -172,9 +199,11 @@ export const TEMPLATE_TYPE_LABEL: Record<TemplateType, string> = {
   multiUserBaggage: 'Multi-user · Baggage',
   dedicatedGate: 'Dedicated · Gate',
   dedicatedBaggage: 'Dedicated · Baggage',
+  dedicatedFreeform: 'Dedicated · Freeform',
   dedicatedDoubleGate: 'Dedicated · Gate (Double)',
   dedicatedGateEntry: 'Dedicated · Gate Entry',
   dedicatedCarousel: 'Dedicated · Carousel',
+  dedicatedFreeformMulti: 'Dedicated · Freeform (Multi)',
 }
 
 /**
@@ -197,8 +226,11 @@ export const TEMPLATE_TYPE_TO_DISPLAY_TYPE: Record<TemplateType, number> = {
   dedicatedBaggage: 7,
   // POS DisplayType doesn't yet distinguish single vs. double-gate vs.
   // gate-entry displays — they all map to 5 (DedicatedGate). Revisit
-  // when the POS contract adds dedicated variants.
+  // when the POS contract adds dedicated variants. The freeform
+  // variants follow the same provisional mapping (single→5, multi→5).
+  dedicatedFreeform: 5,
   dedicatedDoubleGate: 5,
   dedicatedGateEntry: 5,
   dedicatedCarousel: 7,
+  dedicatedFreeformMulti: 5,
 }
