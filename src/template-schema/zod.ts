@@ -296,10 +296,21 @@ const dedicatedMultiTemplate = z.object({
   flipPages: flipPages.optional(),
 })
 
+// Signage — width/height required (shadow the base's optional fields);
+// main is a FreeformBand (reuses the freeform editing surface).
+const signageTemplate = z.object({
+  ...templateBase,
+  width: z.number().int().positive(),
+  height: z.number().int().positive(),
+  type: z.enum(['signageRibbon', 'signagePillar', 'signageDisplay']),
+  main: freeformBand,
+})
+
 export const templateSchema = z.discriminatedUnion('type', [
   tabularTemplate,
   dedicatedTemplate,
   dedicatedMultiTemplate,
+  signageTemplate,
 ])
 
 // ── Export envelope ────────────────────────────────────────────────

@@ -39,3 +39,26 @@ export function buildScopedListQuery(req: AuthRequest): Record<string, unknown> 
     ],
   }
 }
+
+/**
+ * Single-document read query — mirrors the list's isPublic OR clause so
+ * a template surfaced in /list also loads via /:id. Writes keep using
+ * the strict buildScopedQuery: only owners can mutate, but anyone can
+ * read public docs from any tenant.
+ */
+export function buildScopedReadQuery(
+  req: AuthRequest,
+  id?: string | Types.ObjectId,
+): Record<string, unknown> {
+  const condition: Record<string, unknown> = {
+    isActive: true,
+    $or: [
+      { isPublic: true },
+      { ownerType: req.scope.ownerType, ownerId: req.scope.ownerId },
+    ],
+  }
+  if (id && isValidObjectId(id)) {
+    condition._id = new Types.ObjectId(id as string)
+  }
+  return condition
+}

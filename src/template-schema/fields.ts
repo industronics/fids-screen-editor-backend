@@ -356,4 +356,8 @@ export const FIELDS_BY_TYPE: Record<TemplateType, readonly FidsField[]> = {
   // bindable so users can compose any layout from scratch.
   dedicatedFreeform: FIDS_FIELDS,
   dedicatedFreeformMulti: FIDS_FIELDS,
+  // Signage isn't flight-bound by intent; empty allowlist.
+  signageRibbon: [],
+  signagePillar: [],
+  signageDisplay: [],
 }

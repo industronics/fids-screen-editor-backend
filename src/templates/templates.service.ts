@@ -7,7 +7,7 @@ import type { CreateTemplateDto } from './dto/create-template.dto'
 import type { UpdateTemplateDto } from './dto/update-template.dto'
 import type { Orientation, Template, TemplateType } from '../template-schema'
 import { IStorageService, TEMPLATE_STORAGE_SERVICE } from '../storage/storage.service'
-import { buildScopedListQuery, buildScopedQuery } from '../common/scoped-query'
+import { buildScopedListQuery, buildScopedQuery, buildScopedReadQuery } from '../common/scoped-query'
 
 /**
  * TemplateMeta — the wire shape the editor's library list reads. Mirrors
@@ -59,7 +59,7 @@ export class TemplatesService {
   }
 
   async getOne(req: AuthRequest, id: string): Promise<SavedTemplateDto> {
-    const doc = await this.findScopedOrThrow(req, id)
+    const doc = await this.findReadableOrThrow(req, id)
     const template = await this.readBodyOrThrow(String(doc._id))
     return { meta: toMeta(doc), template }
   }
@@ -175,6 +175,9 @@ export class TemplatesService {
     return JSON.parse(buffer.toString('utf-8')) as Template
   }
 
+  /** Strict — used by every write path. Only the owning tenant can
+   *  mutate; cross-tenant attempts get a 404 identical to not-found so
+   *  existence doesn't leak. */
   private async findScopedOrThrow(
     req: AuthRequest,
     id: string,
@@ -183,6 +186,20 @@ export class TemplatesService {
       throw new NotFoundException(`Template ${id} not found`)
     }
     const doc = await this.model.findOne(buildScopedQuery(req, id)).exec()
+    if (!doc) throw new NotFoundException(`Template ${id} not found`)
+    return doc
+  }
+
+  /** Relaxed — used by reads. Allows isPublic docs from other tenants
+   *  through so anything surfaced in /list also loads via /:id. */
+  private async findReadableOrThrow(
+    req: AuthRequest,
+    id: string,
+  ): Promise<TemplateDocument> {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new NotFoundException(`Template ${id} not found`)
+    }
+    const doc = await this.model.findOne(buildScopedReadQuery(req, id)).exec()
     if (!doc) throw new NotFoundException(`Template ${id} not found`)
     return doc
   }

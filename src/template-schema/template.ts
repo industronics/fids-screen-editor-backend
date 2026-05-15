@@ -34,8 +34,18 @@ export const TEMPLATE_TYPES = [
   'dedicatedGateEntry',
   'dedicatedCarousel',
   'dedicatedFreeformMulti',
+  'signageRibbon',
+  'signagePillar',
+  'signageDisplay',
 ] as const
 export type TemplateType = (typeof TEMPLATE_TYPES)[number]
+
+/** Signage types — standalone LED signboards / billboards. Distinct
+ *  from the FIDS template families: no flight binding contract, no
+ *  header / footer chrome, no orientation (width/height fully
+ *  user-picked, any aspect). */
+export const SIGNAGE_TYPES = ['signageRibbon', 'signagePillar', 'signageDisplay'] as const
+export type SignageTemplateType = (typeof SIGNAGE_TYPES)[number]
 
 export const TABULAR_TYPES = [
   'multiUserDepartures',
@@ -105,12 +115,10 @@ interface TemplateBase {
    *  cell's `tick % values.length`. Editable in the Animation inspector;
    *  persisted with the template so saved/exported boards keep their tempo. */
   cycleMs: number
-  /** Custom artboard dimensions. Only set for freeform template types
-   *  (dedicatedFreeform / dedicatedFreeformMulti) where the user picks
-   *  the canvas size. When absent (fixed templates), dims fall back to
-   *  the global 1920×1080 / 1080×1920 presets driven by `orientation`.
-   *  `orientation` is auto-synced (w > h) for freeform so existing
-   *  orientation-aware code keeps working uniformly. */
+  /** Custom artboard dimensions. Only set for freeform / signage
+   *  template types where the user picks the canvas size. When absent
+   *  (fixed templates), dims fall back to the global 1920×1080 /
+   *  1080×1920 presets driven by `orientation`. */
   width?: number
   height?: number
   header: FreeformBand
@@ -143,9 +151,21 @@ export interface DedicatedMultiTemplate extends TemplateBase {
   flipPages?: FlipPagesConfig
 }
 
+/**
+ * SignageTemplate — standalone signboard. Width/height required;
+ * header/footer present but seeded with enabled=false so the canvas
+ * is pure main band. Orientation auto-syncs from w/h; UI hides toggle.
+ */
+export interface SignageTemplate extends TemplateBase {
+  type: SignageTemplateType
+  width: number
+  height: number
+  main: FreeformBand
+}
+
 export type AnyDedicatedTemplate = DedicatedTemplate | DedicatedMultiTemplate
 
-export type Template = TabularTemplate | DedicatedTemplate | DedicatedMultiTemplate
+export type Template = TabularTemplate | DedicatedTemplate | DedicatedMultiTemplate | SignageTemplate
 
 export const isTabular = (t: Template): t is TabularTemplate =>
   (TABULAR_TYPES as readonly string[]).includes(t.type)
@@ -158,6 +178,9 @@ export const isDedicatedSingle = (t: Template): t is DedicatedTemplate =>
 
 export const isDedicatedMulti = (t: Template): t is DedicatedMultiTemplate =>
   (DEDICATED_MULTI_TYPES as readonly string[]).includes(t.type)
+
+export const isSignage = (t: Template): t is SignageTemplate =>
+  (SIGNAGE_TYPES as readonly string[]).includes(t.type)
 
 /**
  * Layout direction for a dedicated-multi template's row stamping.
@@ -204,6 +227,9 @@ export const TEMPLATE_TYPE_LABEL: Record<TemplateType, string> = {
   dedicatedGateEntry: 'Dedicated · Gate Entry',
   dedicatedCarousel: 'Dedicated · Carousel',
   dedicatedFreeformMulti: 'Dedicated · Freeform (Multi)',
+  signageRibbon: 'Signage · Ribbon',
+  signagePillar: 'Signage · Pillar',
+  signageDisplay: 'Signage · Display',
 }
 
 /**
@@ -233,4 +259,10 @@ export const TEMPLATE_TYPE_TO_DISPLAY_TYPE: Record<TemplateType, number> = {
   dedicatedGateEntry: 5,
   dedicatedCarousel: 7,
   dedicatedFreeformMulti: 5,
+  // Signage isn't part of the pos_frontend DisplayType contract yet —
+  // map to 0 as a placeholder until the runtime team adds an explicit
+  // signage display type.
+  signageRibbon: 0,
+  signagePillar: 0,
+  signageDisplay: 0,
 }
