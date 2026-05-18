@@ -38,7 +38,7 @@ spec:
       serviceAccountName: gke-sa
       containers:
         - name: fids-studio-backend
-          image: asia-southeast1-docker.pkg.dev/GOOGLE_CLOUD_PROJECT/fids-studio-api-ENV_NAME/backend:COMMIT_SHA
+          image: asia-southeast1-docker.pkg.dev/GOOGLE_CLOUD_PROJECT/fids-studio-ENV_NAME/backend:COMMIT_SHA
           imagePullPolicy: Always
           ports:
             - containerPort: 3001
