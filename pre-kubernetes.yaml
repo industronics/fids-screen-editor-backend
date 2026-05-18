@@ -1,0 +1,118 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fids-studio-backend-config
+  namespace: ENV_NAME
+data:
+  PORT: "3001"
+  DEPLOYMENT_MODE: "cloud"
+  MONGO_DB_NAME: "CFG_MONGO_DB_NAME"
+  GCS_BUCKET: "CFG_GCS_BUCKET"
+  GCS_IMAGE_PREFIX: "CFG_GCS_IMAGE_PREFIX"
+  GCS_TEMPLATE_PREFIX: "CFG_GCS_TEMPLATE_PREFIX"
+  SIGNED_URL_TTL_SECONDS: "CFG_SIGNED_URL_TTL"
+  CORS_ORIGINS: "CFG_CORS_ORIGINS"
+  AUTH_ENABLED: "CFG_AUTH_ENABLED"
+  AUTH_SERVICE_URL: "CFG_AUTH_SERVICE_URL"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fids-studio-backend
+  namespace: ENV_NAME
+  annotations:
+    # Workload Identity — pod uses the GCS perms of gke-sa GSA.
+    iam.gke.io/gcp-service-account: gke-sa@CFG_CLUSTER_PROJECT.iam.gserviceaccount.com
+  labels:
+    app: fids-studio-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fids-studio-backend
+  template:
+    metadata:
+      labels:
+        app: fids-studio-backend
+    spec:
+      serviceAccountName: gke-sa
+      containers:
+        - name: fids-studio-backend
+          image: asia-southeast1-docker.pkg.dev/GOOGLE_CLOUD_PROJECT/fids-studio-api-ENV_NAME/backend:COMMIT_SHA
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3001
+          envFrom:
+            - configMapRef:
+                name: fids-studio-backend-config
+            - secretRef:
+                name: fids-studio-backend-secrets
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          resources:
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+---
+# NEG-enabled ClusterIP — Ingress routes through this Service via NEG.
+apiVersion: v1
+kind: Service
+metadata:
+  name: fids-studio-backend
+  namespace: ENV_NAME
+  annotations:
+    cloud.google.com/neg: '{"ingress": true}'
+spec:
+  selector:
+    app: fids-studio-backend
+  type: ClusterIP
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3001
+---
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: fids-studio-backend-cert
+  namespace: ENV_NAME
+spec:
+  domains:
+    - fids-studio-api.iax.my
+---
+apiVersion: networking.gke.io/v1beta1
+kind: FrontendConfig
+metadata:
+  name: fids-studio-backend-config-fc
+  namespace: ENV_NAME
+spec:
+  redirectToHttps:
+    enabled: true
+---
+# Static IP "screen-editor-backend" → 8.228.231.17 (already reserved globally).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: fids-studio-backend-ingress
+  namespace: ENV_NAME
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+    kubernetes.io/ingress.global-static-ip-name: screen-editor-backend
+    networking.gke.io/managed-certificates: fids-studio-backend-cert
+    networking.gke.io/v1beta1.FrontendConfig: fids-studio-backend-config-fc
+spec:
+  defaultBackend:
+    service:
+      name: fids-studio-backend
+      port:
+        number: 80

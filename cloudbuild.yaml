@@ -1,0 +1,76 @@
+steps:
+  # Pull GitHub Personal Access Token for @industronics/* private packages.
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: /bin/sh
+    args:
+      - '-c'
+      - |
+        gcloud secrets versions access latest --secret=GITHUB_PAT > /workspace/github_pat
+
+  # Build with PAT as a build arg so npm ci can reach GitHub Packages.
+  - name: 'gcr.io/cloud-builders/docker'
+    entrypoint: /bin/sh
+    args:
+      - '-c'
+      - |
+        docker build \
+          --build-arg GITHUB_PAT="$(cat /workspace/github_pat)" \
+          -t asia-southeast1-docker.pkg.dev/$PROJECT_ID/fids-studio-api-${_TARGET_ENV}/backend:$SHORT_SHA .
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'asia-southeast1-docker.pkg.dev/$PROJECT_ID/fids-studio-api-${_TARGET_ENV}/backend:$SHORT_SHA'
+
+  # Render k8s template — sed swaps in build-project ID, commit SHA,
+  # target env, and runtime config from substitution variables.
+  - name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: /bin/sh
+    args:
+      - '-c'
+      - |
+        sed \
+          -e "s|GOOGLE_CLOUD_PROJECT|${PROJECT_ID}|g" \
+          -e "s|COMMIT_SHA|${SHORT_SHA}|g" \
+          -e "s|ENV_NAME|${_TARGET_ENV}|g" \
+          -e "s|CFG_GCS_BUCKET|${_GCS_BUCKET}|g" \
+          -e "s|CFG_GCS_IMAGE_PREFIX|${_GCS_IMAGE_PREFIX}|g" \
+          -e "s|CFG_GCS_TEMPLATE_PREFIX|${_GCS_TEMPLATE_PREFIX}|g" \
+          -e "s|CFG_SIGNED_URL_TTL|${_SIGNED_URL_TTL_SECONDS}|g" \
+          -e "s|CFG_MONGO_DB_NAME|${_MONGO_DB_NAME}|g" \
+          -e "s|CFG_CORS_ORIGINS|${_CORS_ORIGINS}|g" \
+          -e "s|CFG_AUTH_SERVICE_URL|${_AUTH_SERVICE_URL}|g" \
+          -e "s|CFG_AUTH_ENABLED|${_AUTH_ENABLED}|g" \
+          -e "s|CFG_CLUSTER_PROJECT|${_GCLOUD_PROJECT_ID}|g" \
+          pre-kubernetes.yaml > kubernetes.yaml
+        cat kubernetes.yaml
+
+  - name: "gcr.io/cloud-builders/gke-deploy"
+    args:
+      - run
+      - --filename=kubernetes.yaml
+      - --location=${_GKE_ZONE}
+      - --cluster=${_TARGET_ENV}-cluster
+      - --project=${_GCLOUD_PROJECT_ID}
+      - --namespace=${_TARGET_ENV}
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+# Defaults — override in the Cloud Build trigger if needed.
+# Sensitive values (MONGO_URI, JWT_SECRET) live in the K8s Secret
+# 'fids-studio-backend-secrets' in the target-env namespace — create it
+# via GKE Console (Secrets & ConfigMaps) before first deploy.
+# Promote to prod: set _TARGET_ENV=prod on the trigger.
+substitutions:
+  _TARGET_ENV: staging
+  _GKE_ZONE: asia-southeast1
+  _GCLOUD_PROJECT_ID: com-industronics-adsys-cicd-d
+  _GCS_BUCKET: iasb
+  _GCS_IMAGE_PREFIX: images/
+  _GCS_TEMPLATE_PREFIX: templates/
+  _SIGNED_URL_TTL_SECONDS: "3600"
+  _MONGO_DB_NAME: fids-studio-cloud
+  _CORS_ORIGINS: https://fids-studio.iax.my
+  _AUTH_SERVICE_URL: ""
+  _AUTH_ENABLED: "true"
