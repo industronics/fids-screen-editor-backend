@@ -129,8 +129,55 @@ const imageElement = z.object({
   objectFit: imageObjectFit.optional(),
 })
 
+const iconElement = z.object({
+  ...baseElement,
+  type: z.literal('icon'),
+  src: z.string().optional(),
+  objectFit: imageObjectFit.optional(),
+  tint: z.string().optional(),
+})
+
+// Weather widget — designs only; runtime data substitution happens in
+// the processor. Per-slot styling lives inside four named slot objects;
+// see editor src/shared/schema/elements.ts for the source-of-truth shape.
+const weatherCondition = z.enum([
+  '01d', '01n', '02d', '02n', '03d', '03n', '04d', '04n',
+  '09d', '09n', '10d', '10n', '11d', '11n', '13d', '13n',
+  '50d', '50n',
+])
+
+const weatherLayout = z.enum(['icon-only', 'icon-top', 'icon-bottom', 'icon-left', 'icon-right'])
+
+const weatherSlot = z.object({
+  show: z.boolean(),
+  color: z.string().optional(),
+  fontSize: z.number().optional(),
+  fontWeight: z.number().optional(),
+  fontFamily: fontFamily.optional(),
+  textAlign: textAlign.optional(),
+})
+
+const weatherElement = z.object({
+  ...baseElement,
+  type: z.literal('weather'),
+  layout: weatherLayout,
+  variant: z.enum(['fill', 'flat', 'line', 'monochrome']),
+  animated: z.boolean(),
+  iconScale: z.number().optional(),
+  temp: weatherSlot,
+  condition: weatherSlot,
+  city: weatherSlot,
+  highLow: weatherSlot,
+  background: z.string().optional(),
+  borderRadius: z.number().optional(),
+  padding: z.number().optional(),
+  previewCondition: weatherCondition,
+  previewCity: z.string(),
+  cyclePreview: z.boolean().optional(),
+})
+
 const freeformChild = z.discriminatedUnion('type', [
-  rectElement, textElement, logoElement, clockElement, imageElement,
+  rectElement, textElement, logoElement, clockElement, imageElement, iconElement, weatherElement,
 ])
 
 // ── Band schemas ───────────────────────────────────────────────────

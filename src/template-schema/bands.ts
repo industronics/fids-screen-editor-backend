@@ -11,7 +11,7 @@
  * defines the shapes a band can take. Composition lives in template.ts.
  */
 
-import type { ClockElement, ImageElement, LogoElement, RectElement, TextElement } from './elements'
+import type { ClockElement, IconElement, ImageElement, LogoElement, RectElement, TextElement, WeatherElement } from './elements'
 
 export const BAND_IDS = ['header', 'columnHeader', 'main', 'footer'] as const
 export type BandId = (typeof BAND_IDS)[number]
@@ -19,7 +19,7 @@ export type BandId = (typeof BAND_IDS)[number]
 /** Bands that host freeform children. Dedicated `main` is freeform too. */
 export type FreeformBandId = 'header' | 'main' | 'footer'
 
-export type FreeformChild = RectElement | TextElement | LogoElement | ClockElement | ImageElement
+export type FreeformChild = RectElement | TextElement | LogoElement | ClockElement | ImageElement | IconElement | WeatherElement
 
 export interface FreeformBand {
   enabled: boolean

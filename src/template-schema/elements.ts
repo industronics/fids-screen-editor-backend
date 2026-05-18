@@ -153,11 +153,37 @@ export type ImageObjectFit = 'cover' | 'contain' | 'fill'
  * the deployment root (Vite serves anything under `public/` at `/<file>`),
  * or any absolute URL. Empty src renders a placeholder so the layer is
  * visible while the user wires it up.
+ *
+ * Animated GIFs are supported via the same `<img>` render path — pick an
+ * asset from the `'animation'` category and it plays natively.
  */
 export interface ImageElement extends BaseElement {
   type: 'image'
   src?: string
   objectFit?: ImageObjectFit
+}
+
+/**
+ * IconElement — pictogram element. Same render contract as ImageElement
+ * (asset URL + objectFit), but kept as a distinct discriminator so the
+ * add-element menu, layer tree, and inspector can route picks to the
+ * `'icon'` asset category by default. Useful for signage boards
+ * (weather, directional, info pictograms) but valid in any FreeformBand.
+ */
+export interface IconElement extends BaseElement {
+  type: 'icon'
+  src?: string
+  objectFit?: ImageObjectFit
+  /**
+   * Optional tint. When set, the icon renders via CSS `mask-image` +
+   * `background-color`, painting the asset's alpha shape in the given
+   * colour — so the same monochrome SVG (or alpha-PNG) can be recoloured
+   * per placement without uploading a recoloured copy. Multi-colour SVGs
+   * collapse to the tint; that's the intended pictogram behaviour. When
+   * undefined the icon renders as an `<img>` and preserves its authored
+   * colours.
+   */
+  tint?: string
 }
 
 /**
@@ -247,7 +273,58 @@ export interface ClockElement extends BaseElement {
   chipBg?: string
 }
 
-export type CanvasElement = RectElement | TextElement | LogoElement | ClockElement | ImageElement
+export type WeatherVariant = 'fill' | 'flat' | 'line' | 'monochrome'
+
+export type WeatherLayout =
+  | 'icon-only'
+  | 'icon-top'
+  | 'icon-bottom'
+  | 'icon-left'
+  | 'icon-right'
+
+/**
+ * WeatherSlot — per-data-piece config for the Weather widget. Each of
+ * the four slots (temp / condition / city / highLow) gets its own
+ * visibility toggle and full typography override.
+ */
+export interface WeatherSlot {
+  show: boolean
+  color?: string
+  fontSize?: number
+  fontWeight?: number
+  fontFamily?: FontFamily
+  textAlign?: TextAlign
+}
+
+/**
+ * WeatherElement — live weather widget. The runtime (DCMM + processor)
+ * substitutes live values for temp/condition/city/highLow based on the
+ * screen's deploy-site coordinates; the template only stores appearance
+ * and design-time previews. `previewCondition` uses the OWM icon-code
+ * vocabulary ('01d', '10n', …).
+ */
+export interface WeatherElement extends BaseElement {
+  type: 'weather'
+  layout: WeatherLayout
+  variant: WeatherVariant
+  animated: boolean
+  iconScale?: number
+
+  temp: WeatherSlot
+  condition: WeatherSlot
+  city: WeatherSlot
+  highLow: WeatherSlot
+
+  background?: string
+  borderRadius?: number
+  padding?: number
+
+  previewCondition: string
+  previewCity: string
+  cyclePreview?: boolean
+}
+
+export type CanvasElement = RectElement | TextElement | LogoElement | ClockElement | ImageElement | IconElement | WeatherElement
 
 type DistributiveOmit<T, K extends keyof T> = T extends T ? Omit<T, K> : never
 export type ElementInit = DistributiveOmit<CanvasElement, 'id'>
@@ -256,4 +333,6 @@ export const isRect = (e: CanvasElement): e is RectElement => e.type === 'rect'
 export const isText = (e: CanvasElement): e is TextElement => e.type === 'text'
 export const isLogo = (e: CanvasElement): e is LogoElement => e.type === 'logo'
 export const isClock = (e: CanvasElement): e is ClockElement => e.type === 'clock'
+export const isWeather = (e: CanvasElement): e is WeatherElement => e.type === 'weather'
 export const isImage = (e: CanvasElement): e is ImageElement => e.type === 'image'
+export const isIcon = (e: CanvasElement): e is IconElement => e.type === 'icon'

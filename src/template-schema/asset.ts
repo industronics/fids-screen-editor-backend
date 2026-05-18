@@ -12,6 +12,8 @@ export const ASSET_CATEGORIES = [
   'header',
   'footer',
   'logo',
+  'icon',
+  'animation',
   'other',
 ] as const
 
@@ -22,6 +24,8 @@ export const ASSET_CATEGORY_LABEL: Record<AssetCategory, string> = {
   header: 'Header',
   footer: 'Footer',
   logo: 'Logo',
+  icon: 'Icon',
+  animation: 'Animation',
   other: 'Other',
 }
 
