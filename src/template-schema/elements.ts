@@ -37,6 +37,15 @@ export interface BaseElement {
   hidden?: boolean
   locked?: boolean
   aspectLocked?: boolean
+  /**
+   * Group membership — every element in the same band sharing the same
+   * `groupId` is treated as one unit by selection, drag, snap, and gap
+   * math in the editor. Flat membership: no nested groups, no
+   * group-level properties. The renderer ignores this field today;
+   * grouping is editor-only state that round-trips through the wire
+   * format without affecting playback.
+   */
+  groupId?: string
 }
 
 /**

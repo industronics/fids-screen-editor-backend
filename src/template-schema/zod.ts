@@ -43,6 +43,7 @@ const baseElement = {
   hidden: z.boolean().optional(),
   locked: z.boolean().optional(),
   aspectLocked: z.boolean().optional(),
+  groupId: z.string().optional(),
 }
 
 const fieldBinding = z.object({

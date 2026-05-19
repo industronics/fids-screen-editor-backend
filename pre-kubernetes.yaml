@@ -36,12 +36,26 @@ spec:
         app: fids-studio-backend
     spec:
       serviceAccountName: gke-sa
+      volumes:
+        - name: gcs-secret
+          secret:
+            secretName: gcs-service-account-key
+            items:
+              - key: sa-key.json
+                path: sa-key.json
       containers:
         - name: fids-studio-backend
           image: asia-southeast1-docker.pkg.dev/GOOGLE_CLOUD_PROJECT/fids-studio-ENV_NAME/backend:COMMIT_SHA
           imagePullPolicy: Always
           ports:
             - containerPort: 3001
+          env:
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: /var/secrets/google/sa-key.json
+          volumeMounts:
+            - name: gcs-secret
+              mountPath: /var/secrets/google
+              readOnly: true
           envFrom:
             - configMapRef:
                 name: fids-studio-backend-config
