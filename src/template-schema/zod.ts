@@ -361,6 +361,41 @@ export const templateSchema = z.discriminatedUnion('type', [
   signageTemplate,
 ])
 
+/**
+ * Building-block schemas surfaced for the editor's schema test harness
+ * only — NOT used by the backend runtime. The parity test imports this
+ * and asserts each shape stays key-for-key identical to the editor's
+ * `schemaShapes` (src/shared/lib/templateSchema.ts). Keep the keys in
+ * lockstep with that object so drift in either repo fails the test.
+ */
+export const backendSchemaShapes = {
+  rectElement,
+  textElement,
+  logoElement,
+  clockElement,
+  imageElement,
+  iconElement,
+  weatherElement,
+  weatherSlot,
+  fieldBinding,
+  styleRule,
+  boundBandStyle,
+  scrollTextConfig,
+  freeformBand,
+  columnHeaderBand,
+  tabularMainBand,
+  dedicatedMainBand,
+  dedicatedMultiMainBand,
+  columnCellStyle,
+  dateOverflow,
+  fidsColumn,
+  flipPages,
+  tabularTemplate,
+  dedicatedTemplate,
+  dedicatedMultiTemplate,
+  signageTemplate,
+} as const
+
 // ── Export envelope ────────────────────────────────────────────────
 //
 // Wraps the template body with format/version markers so the import
