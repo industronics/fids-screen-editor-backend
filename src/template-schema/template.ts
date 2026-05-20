@@ -27,6 +27,7 @@ export const TEMPLATE_TYPES = [
   'multiUserDepartures',
   'multiUserArrivals',
   'multiUserBaggage',
+  'multiUserCheckIn',
   'dedicatedGate',
   'dedicatedBaggage',
   'dedicatedFreeform',
@@ -51,6 +52,7 @@ export const TABULAR_TYPES = [
   'multiUserDepartures',
   'multiUserArrivals',
   'multiUserBaggage',
+  'multiUserCheckIn',
 ] as const
 export type TabularTemplateType = (typeof TABULAR_TYPES)[number]
 
@@ -220,6 +222,7 @@ export const TEMPLATE_TYPE_LABEL: Record<TemplateType, string> = {
   multiUserDepartures: 'Multi-user · Departures',
   multiUserArrivals: 'Multi-user · Arrivals',
   multiUserBaggage: 'Multi-user · Baggage',
+  multiUserCheckIn: 'Multi-user · Check-in',
   dedicatedGate: 'Dedicated · Gate',
   dedicatedBaggage: 'Dedicated · Baggage',
   dedicatedFreeform: 'Dedicated · Freeform',
@@ -241,13 +244,14 @@ export const TEMPLATE_TYPE_LABEL: Record<TemplateType, string> = {
  *   4 MultiUserCheckIn   · 5 DedicatedGate    · 6 DedicatedCheckIn
  *   7 DedicatedCarousel  · 8 DedicatedCheckInRow
  *
- * The editor only models 5 of those 8 today; the omitted check-in
- * variants have no entry here.
+ * The editor models 6 of those 8 today; the dedicated check-in
+ * variants (6 DedicatedCheckIn, 8 DedicatedCheckInRow) have no entry yet.
  */
 export const TEMPLATE_TYPE_TO_DISPLAY_TYPE: Record<TemplateType, number> = {
   multiUserDepartures: 1,
   multiUserArrivals: 2,
   multiUserBaggage: 3,
+  multiUserCheckIn: 4,
   dedicatedGate: 5,
   dedicatedBaggage: 7,
   // POS DisplayType doesn't yet distinguish single vs. double-gate vs.

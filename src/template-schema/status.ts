@@ -127,7 +127,7 @@ export const REMARK_TO_CODE: Record<RemarkCode, string> = {
  * binding has to make the choice explicit so the export contract is
  * unambiguous.
  */
-export const STATUS_SOURCES = ['remarkCode', 'currentStatus', 'carouselRemarks'] as const
+export const STATUS_SOURCES = ['remarkCode', 'currentStatus', 'carouselRemarks', 'checkInStatus'] as const
 export type StatusSource = (typeof STATUS_SOURCES)[number]
 
 export interface StatusTranslation {

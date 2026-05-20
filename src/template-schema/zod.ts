@@ -318,7 +318,7 @@ const flipPages = z.object({
 
 const tabularTemplate = z.object({
   ...templateBase,
-  type: z.enum(['multiUserDepartures', 'multiUserArrivals', 'multiUserBaggage']),
+  type: z.enum(['multiUserDepartures', 'multiUserArrivals', 'multiUserBaggage', 'multiUserCheckIn']),
   columnHeader: columnHeaderBand,
   main: tabularMainBand,
   columnsLandscape: z.array(fidsColumn),

@@ -43,10 +43,15 @@ export const FIDS_FIELDS = [
   // Arrival / baggage
   'carousel',
   'lastBagAt',
+  // Check-in
+  'checkInRow',
+  'checkInOpens',
+  'checkInCloses',
   // Status (each binds to one FlightStatus on the flight payload)
   'remarkStatus',
   'overallStatus',
   'carouselStatus',
+  'checkInStatus',
 ] as const
 
 export type FidsField = (typeof FIDS_FIELDS)[number]
@@ -295,6 +300,47 @@ export const FIDS_FIELD_META: Record<FidsField, FidsFieldMeta> = {
     mockHeader: 'BELT STATUS',
     mockCell: 'BAG DELIVERY',
   },
+  checkInRow: {
+    id: 'checkInRow',
+    label: 'Check-in Row',
+    kind: 'text',
+    defaultWidth: 220,
+    defaultAlign: 'center',
+    defaultAnimation: 'none',
+    mockHeader: 'CHECK-IN',
+    mockCell: 'C1–C12',
+  },
+  checkInOpens: {
+    id: 'checkInOpens',
+    label: 'Check-in Opens',
+    kind: 'text',
+    defaultWidth: 160,
+    defaultAlign: 'center',
+    defaultAnimation: 'none',
+    mockHeader: 'OPENS',
+    mockCell: '10:30',
+  },
+  checkInCloses: {
+    id: 'checkInCloses',
+    label: 'Check-in Closes',
+    kind: 'text',
+    defaultWidth: 160,
+    defaultAlign: 'center',
+    defaultAnimation: 'none',
+    mockHeader: 'CLOSES',
+    mockCell: '13:45',
+  },
+  checkInStatus: {
+    id: 'checkInStatus',
+    label: 'Check-in Status',
+    kind: 'status',
+    defaultWidth: 360,
+    defaultAlign: 'left',
+    defaultAnimation: 'fade',
+    statusSource: 'checkInStatus',
+    mockHeader: 'STATUS',
+    mockCell: 'COUNTER OPEN',
+  },
 }
 
 /**
@@ -318,6 +364,12 @@ export const FIELDS_BY_TYPE: Record<TemplateType, readonly FidsField[]> = {
     'scheduled', 'estimated',
     'carousel', 'lastBagAt',
     'overallStatus', 'carouselStatus',
+  ],
+  multiUserCheckIn: [
+    'flightNo', 'mainFlight', 'codeshares', 'airlineLogo', 'destination', 'terminal',
+    'scheduled', 'estimated',
+    'checkInRow', 'checkInOpens', 'checkInCloses',
+    'checkInStatus',
   ],
   dedicatedGate: [
     'flightNo', 'mainFlight', 'codeshares', 'airlineLogo', 'aircraftType', 'destination', 'terminal',
