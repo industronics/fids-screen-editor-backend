@@ -44,10 +44,22 @@ export class RemarkCatalogService {
     return raw.replace(/\/+$/, '')
   }
 
-  async getCatalog(req: AuthRequest): Promise<RemarkCatalogItem[]> {
+  /**
+   * `refresh: true` bypasses the TTL cache and pulls straight from
+   * flight-trips-api — used by the colour-config editor so a remark just
+   * added/renamed in TAMS shows up immediately instead of after the TTL
+   * lapses. The fresh result still refreshes the cache, so the cheaper
+   * cached path (canvas preview) picks it up too.
+   */
+  async getCatalog(
+    req: AuthRequest,
+    opts?: { refresh?: boolean },
+  ): Promise<RemarkCatalogItem[]> {
     const ownerKey = String(req.scope.ownerId)
-    const hit = this.cache.get(ownerKey)
-    if (hit && Date.now() - hit.at < CACHE_TTL_MS) return hit.items
+    if (!opts?.refresh) {
+      const hit = this.cache.get(ownerKey)
+      if (hit && Date.now() - hit.at < CACHE_TTL_MS) return hit.items
+    }
 
     const items = await this.fetchUpstream(req)
     this.cache.set(ownerKey, { at: Date.now(), items })
