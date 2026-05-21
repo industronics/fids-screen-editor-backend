@@ -13,18 +13,14 @@ export interface RemarkCatalogItem {
   category: string | null
 }
 
-interface CacheEntry {
-  at: number
-  items: RemarkCatalogItem[]
-}
-
-const CACHE_TTL_MS = 5 * 60 * 1000
-
 /**
- * RemarkCatalogService — server-to-server proxy + cache for
- * flight-trips-api's `/flight-remarks/getAll`. The editor talks only to
- * its own backend for this feature (one origin), and we cache per owner
- * because the catalog is per-airport, not per-user.
+ * RemarkCatalogService — server-to-server proxy for flight-trips-api's
+ * `/flight-remarks/getAll`. The editor talks only to its own backend for
+ * this feature (one origin).
+ *
+ * No caching: the catalog must reflect TAMS create/rename/delete the
+ * instant it happens, and it's a small payload read infrequently (config
+ * grid + a once-per-session canvas preload), so we always fetch live.
  *
  * Auth is a pass-through: we forward the caller's Authorization header
  * (present only in real-auth mode) plus `x-owner-id` derived from the
@@ -34,7 +30,6 @@ const CACHE_TTL_MS = 5 * 60 * 1000
 @Injectable()
 export class RemarkCatalogService {
   private readonly logger = new Logger(RemarkCatalogService.name)
-  private readonly cache = new Map<string, CacheEntry>()
 
   constructor(private readonly config: ConfigService) {}
 
@@ -44,26 +39,9 @@ export class RemarkCatalogService {
     return raw.replace(/\/+$/, '')
   }
 
-  /**
-   * `refresh: true` bypasses the TTL cache and pulls straight from
-   * flight-trips-api — used by the colour-config editor so a remark just
-   * added/renamed in TAMS shows up immediately instead of after the TTL
-   * lapses. The fresh result still refreshes the cache, so the cheaper
-   * cached path (canvas preview) picks it up too.
-   */
-  async getCatalog(
-    req: AuthRequest,
-    opts?: { refresh?: boolean },
-  ): Promise<RemarkCatalogItem[]> {
-    const ownerKey = String(req.scope.ownerId)
-    if (!opts?.refresh) {
-      const hit = this.cache.get(ownerKey)
-      if (hit && Date.now() - hit.at < CACHE_TTL_MS) return hit.items
-    }
-
-    const items = await this.fetchUpstream(req)
-    this.cache.set(ownerKey, { at: Date.now(), items })
-    return items
+  /** Always live — see class note on why there's no cache. */
+  async getCatalog(req: AuthRequest): Promise<RemarkCatalogItem[]> {
+    return this.fetchUpstream(req)
   }
 
   private async fetchUpstream(req: AuthRequest): Promise<RemarkCatalogItem[]> {

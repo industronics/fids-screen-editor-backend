@@ -7,7 +7,6 @@ import {
   Param,
   Post,
   Put,
-  Query,
   Req,
   UseGuards,
 } from '@nestjs/common'
@@ -49,12 +48,8 @@ export class RemarkStylesController {
 
   @Permissions(`${Entity.TemplateEditor}.${PermissionAction.Read}`)
   @Get('catalog')
-  getCatalog(
-    @Req() req: AuthRequest,
-    @Query('refresh') refresh?: string,
-  ): Promise<RemarkCatalogItem[]> {
-    const bypass = refresh === '1' || refresh === 'true'
-    return this.catalog.getCatalog(req, { refresh: bypass })
+  getCatalog(@Req() req: AuthRequest): Promise<RemarkCatalogItem[]> {
+    return this.catalog.getCatalog(req)
   }
 
   @Permissions(`${Entity.TemplateEditor}.${PermissionAction.Read}`)
