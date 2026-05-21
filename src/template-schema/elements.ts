@@ -11,7 +11,6 @@
 import type { FieldAnimation, LogoAnimation } from './animation'
 import type { LogoSource } from './column'
 import type { FidsField } from './fields'
-import type { StyleRule } from './status'
 
 export type FontFamily = 'board' | 'sans' | 'mono'
 export type TextAlign = 'left' | 'center' | 'right'
@@ -85,18 +84,10 @@ export interface TextElement extends BaseElement {
   /**
    * Static background painted behind the text. Useful for "pill"
    * shapes (e.g. the REMARK badge) without stacking a separate Rect
-   * element underneath. Status-driven `styleRules` win over this
-   * value when they match.
+   * element underneath. When the text is status-bound, the resolved
+   * RemarkStyleSet background wins over this static value.
    */
   background?: string
-  /**
-   * Status-driven style overrides. Honoured only when `bind` resolves
-   * to a status field (`remarkStatus`, `overallStatus`,
-   * `carouselStatus`); the renderer reads the active flight's
-   * `FlightStatus`, walks the rules first-match-wins, and applies
-   * `textColor`/`background`/`fontWeight` over the static defaults.
-   */
-  styleRules?: StyleRule[]
   /**
    * When true the renderer wraps overflowing text inside the authored
    * box (whiteSpace: pre-wrap, overflowWrap: break-word) and clips

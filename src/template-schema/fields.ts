@@ -10,8 +10,8 @@
  * `FidsFieldMeta.kind` drives the renderer:
  *   - 'text'   → plain string substitution (with optional animation)
  *   - 'logo'   → IATA-derived image; cycles in lockstep with `flightNo`
- *   - 'status' → reads a FlightStatus, supports translation rotation
- *                and styleRules
+ *   - 'status' → reads a FlightStatus, supports translation rotation;
+ *                colours resolve from the RemarkStyleSet at render time
  */
 
 import type { FieldAnimation } from './animation'

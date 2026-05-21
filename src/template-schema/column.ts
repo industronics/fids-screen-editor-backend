@@ -4,8 +4,11 @@
  *
  * Knobs are split by field kind:
  *   - logo*     applies when FIDS_FIELD_META[field].kind === 'logo'
- *   - rotateTranslations / scrollDurationSec / styleRules
+ *   - rotateTranslations / scrollDurationSec
  *               apply when kind === 'status'
+ *
+ * Status colours are not a column knob — they resolve from the
+ * template's RemarkStyleSet at render time.
  *
  * Validation that ignored knobs aren't present is intentionally not
  * enforced in the type — it's an export-time check, not a render-time
@@ -15,7 +18,6 @@
 import type { FieldAnimation, LogoAnimation } from './animation'
 import type { LogoBucketSize } from './elements'
 import type { FidsField, FieldAlign } from './fields'
-import type { StyleRule } from './status'
 
 export interface ColumnCellStyle {
   fontWeight?: number
@@ -120,5 +122,4 @@ export interface FidsColumn {
   // ── Status-only knobs ──
   rotateTranslations?: boolean
   scrollDurationSec?: number
-  styleRules?: StyleRule[]
 }

@@ -6,6 +6,7 @@ import { ClsModule } from 'nestjs-cls'
 import { AssetsModule } from './assets/assets.module'
 import { HealthModule } from './health/health.module'
 import { TemplatesModule } from './templates/templates.module'
+import { RemarkStylesModule } from './remark-styles/remark-styles.module'
 
 /**
  * AppModule — composition root. Loads .env globally, opens a Mongoose
@@ -54,6 +55,7 @@ import { TemplatesModule } from './templates/templates.module'
     HealthModule,
     TemplatesModule,
     AssetsModule,
+    RemarkStylesModule,
   ],
 })
 export class AppModule {}

@@ -123,6 +123,10 @@ interface TemplateBase {
    *  1080×1920 presets driven by `orientation`. */
   width?: number
   height?: number
+  /** Which RemarkStyleSet (per-airport remark-styles resource) this
+   *  display's status colours resolve from. Absent / null = airport
+   *  default. No per-column/element override — colours are central. */
+  remarkStyleSetId?: string | null
   header: FreeformBand
   footer: FreeformBand
 }

@@ -16,7 +16,6 @@
 import { z } from 'zod'
 import { FIELD_ANIMATIONS, LOGO_ANIMATIONS } from './animation'
 import { FIDS_FIELDS } from './fields'
-import { REMARK_CODES } from './status'
 import { DEFAULT_TEMPLATE_CYCLE_MS, ORIENTATIONS, SCHEMA_VERSION } from './template'
 
 // zod v4 accepts readonly tuples directly; spreading into a mutable
@@ -25,7 +24,6 @@ import { DEFAULT_TEMPLATE_CYCLE_MS, ORIENTATIONS, SCHEMA_VERSION } from './templ
 const fidsField = z.enum([...FIDS_FIELDS] as unknown as readonly [(typeof FIDS_FIELDS)[number], ...(typeof FIDS_FIELDS)[number][]])
 const fieldAnimation = z.enum([...FIELD_ANIMATIONS] as unknown as readonly [(typeof FIELD_ANIMATIONS)[number], ...(typeof FIELD_ANIMATIONS)[number][]])
 const logoAnimation = z.enum([...LOGO_ANIMATIONS] as unknown as readonly [(typeof LOGO_ANIMATIONS)[number], ...(typeof LOGO_ANIMATIONS)[number][]])
-const remarkCode = z.enum([...REMARK_CODES] as unknown as readonly [(typeof REMARK_CODES)[number], ...(typeof REMARK_CODES)[number][]])
 const orientation = z.enum([...ORIENTATIONS] as unknown as readonly [(typeof ORIENTATIONS)[number], ...(typeof ORIENTATIONS)[number][]])
 
 const fieldAlign = z.enum(['left', 'center', 'right'])
@@ -51,13 +49,6 @@ const fieldBinding = z.object({
   animation: fieldAnimation.optional(),
 })
 
-const styleRule = z.object({
-  when: z.object({ key: remarkCode }),
-  textColor: z.string().optional(),
-  fontWeight: z.number().optional(),
-  background: z.string().optional(),
-})
-
 const rectElement = z.object({
   ...baseElement,
   type: z.literal('rect'),
@@ -76,7 +67,6 @@ const textElement = z.object({
   bind: fieldBinding.optional(),
   cycleValues: z.array(z.string()).optional(),
   background: z.string().optional(),
-  styleRules: z.array(styleRule).optional(),
   wrap: z.boolean().optional(),
   lineHeight: z.number().optional(),
   showAirportCode: z.boolean().optional(),
@@ -291,7 +281,6 @@ const fidsColumn = z.object({
   dateOverflow: dateOverflow.optional(),
   rotateTranslations: z.boolean().optional(),
   scrollDurationSec: z.number().optional(),
-  styleRules: z.array(styleRule).optional(),
 })
 
 // ── Template schemas ───────────────────────────────────────────────
@@ -307,6 +296,9 @@ const templateBase = {
   // Custom canvas dims for freeform templates; absent on fixed types.
   width: z.number().int().positive().optional(),
   height: z.number().int().positive().optional(),
+  // Which RemarkStyleSet the display's status colours inherit; null /
+  // absent = the airport's default set. Optional so older exports validate.
+  remarkStyleSetId: z.string().nullable().optional(),
   header: freeformBand,
   footer: freeformBand,
 }
@@ -378,7 +370,6 @@ export const backendSchemaShapes = {
   weatherElement,
   weatherSlot,
   fieldBinding,
-  styleRule,
   boundBandStyle,
   scrollTextConfig,
   freeformBand,
