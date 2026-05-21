@@ -40,6 +40,7 @@ steps:
           -e "s|CFG_MONGO_DB_NAME|${_MONGO_DB_NAME}|g" \
           -e "s|CFG_CORS_ORIGINS|${_CORS_ORIGINS}|g" \
           -e "s|CFG_AUTH_SERVICE_URL|${_AUTH_SERVICE_URL}|g" \
+          -e "s|CFG_FLIGHT_TRIPS_API_URL|${_FLIGHT_TRIPS_API_URL}|g" \
           -e "s|CFG_AUTH_ENABLED|${_AUTH_ENABLED}|g" \
           -e "s|CFG_CLUSTER_PROJECT|${_GCLOUD_PROJECT_ID}|g" \
           pre-kubernetes.yaml > kubernetes.yaml
@@ -73,4 +74,5 @@ substitutions:
   _MONGO_DB_NAME: fids-studio-cloud
   _CORS_ORIGINS: https://fids-studio.iax.my
   _AUTH_SERVICE_URL: ""
+  _FLIGHT_TRIPS_API_URL: ""
   _AUTH_ENABLED: "true"
